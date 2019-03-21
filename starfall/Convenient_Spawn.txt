@@ -1,0 +1,14 @@
+--@name Convenient Spawn
+--@author MacDeth
+--@server
+
+spawn_pos = owner():getPos()
+--spawn_ang = owner():getEyeAngles()
+print("Spawn set! " .. tostring(spawn_pos))
+
+hook.add("PlayerSpawn", "mac_convenient_spawn", function(ply)
+    if ply == owner() then
+        ply:setPos(spawn_pos)
+        --ply:setAngles(spawn_ang)
+    end
+end)

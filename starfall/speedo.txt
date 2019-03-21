@@ -1,0 +1,19 @@
+--@name
+--@author
+--@shared
+--@include libs/convenient.txt
+
+require("libs/convenient.txt")
+link_welded_component()
+
+local last_pos = owner():getPos()
+local distance = 0
+
+timer.create("togdraw", 1, 0, function()
+    distance = (owner():getPos() - last_pos):getLength()
+    last_pos = owner():getPos()
+end)
+
+hook.add("drawhud", "secondthing", function()
+    render.drawText(1800, 100, tostring(distance) .. " ups", 2)
+end)

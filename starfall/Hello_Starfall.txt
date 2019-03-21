@@ -1,0 +1,30 @@
+--@name
+--@author MacDeth
+--@shared
+
+--[[
+Starfall Scripting Environment
+
+Github: https://github.com/thegrb93/StarfallEx
+Reference Page: http://thegrb93.github.io/Starfall/
+
+Default Keyboard shortcuts: https://github.com/ajaxorg/ace/wiki/Default-Keyboard-Shortcuts
+]]
+
+--local font = render.createFont("Default", 30)
+
+--hook.add("drawhud", "hud", function() 
+--    render.setColor(Color(0, 255, 255, 255)) -- Set colour to red, the alpha argument is optional and will default to 255
+--    render.setFont(font) -- "Activate" font
+--    render.drawText(20, 20, "Hello World!") -- Draw text at 20, 20
+--end)
+
+if SERVER then
+    hook.add("PlayerNoClip", "hellostarfall", function(user, state)
+        if state then
+            print(user:getName(), " is using noclip!")
+        else
+            print(user:getName(), " is no longer using noclip!")
+        end
+    end)
+end

@@ -1,0 +1,133 @@
+--@name
+--@author MacDeth
+--@shared
+--@include libs/convenient.txt
+--@include libs/chatlib.txt
+require("libs/convenient.txt")
+
+if SERVER then
+    local command_handler = require("libs/chatlib.txt")
+    
+    local function chat_netsend_path(...)
+        local vargs = {...}
+        net.start("mac_chat_play")
+        net.writeEntity(command_handler.ply)
+        net.writeString(table.concat(vargs, " "))
+        net.send()
+        return ""
+    end
+    command_handler.add_command("!play", chat_netsend_path)
+    
+    local function chat_shush(...)
+        local vargs = {...}
+        net.start("mac_chat_shush")
+        net.writeEntity(command_handler.ply)
+        net.writeString(table.concat(vargs, " "))
+        net.send()
+        return ""
+    end
+    command_handler.add_command("!shush", chat_shush)
+    command_handler.add_command("!sh", chat_shush)
+    
+    return
+end
+
+local sound_list = ""
+local all_needed_perms = {
+    "bass.loadURL",
+    "http.get"
+}
+
+local function has_all_permissions()
+    local check = true
+    
+    for k, v in pairs(all_needed_perms) do
+        if not hasPermission(v) then 
+            check = false
+            break
+        end
+    end
+    
+    return check
+end
+
+function main()
+    http.get("https://pastebin.com/raw/SxxjAGMV",
+        function(body, length, headers, code)
+            assert(code == 200, "Failed to load paste!")
+            sound_list = body
+            
+            local url_prefix = "https://macdeth.keybase.pub//Sound%20Bytes/"
+            
+            if sound_list then
+                sound_list = string.explode("\n", sound_list, false)
+                --printTable(sound_list) -- debug
+                for k, v in pairs(sound_list) do
+                    v = string.replace(v, " ", "%20")
+                end
+            end
+            
+--[[
+            for k, v in pairs(sound_list) do
+                bass.loadURL(url_prefix .. v, "3d", function(obj, err_num, name)
+                    if err_num == 0 and obj:soundsLeft() > 0 then
+                        obj:setPos(chip():getPos())
+                        obj:play()
+                    end
+                end)
+            end
+]]
+
+            local playing_sounds = {}
+            
+            net.receive("mac_chat_play", function(len)
+                local ply = net.readEntity()
+                local snd_path = net.readString()
+                snd_path = find_str_in_table(sound_list, snd_path)
+                snd_path = snd_path == nil and "" or snd_path
+                --print("Player: " .. ply:getName())
+                
+                bass.loadURL(url_prefix .. snd_path, "", function(bass_snd, err_num, name)
+                    if bass_snd then
+                        --bass_snd:setPos(ply:getPos())
+                        table.insert(playing_sounds, bass_snd)
+                        bass_snd:setVolume(0.75)
+                        bass_snd:play()
+                        
+                        timer.create("clean_bass_snd", bass_snd:getLength(), 1, function()
+                            table.removeByValue(playing_sounds, bass_snd)
+                            bass_snd:destroy()
+                        end)
+                    else
+                        print("Can't play sound.")
+                    end
+                end)
+            end)
+            
+            net.receive("mac_chat_shush", function(len)
+                for k, v in pairs(playing_sounds) do
+                    v:destroy()
+                end
+                playing_sounds = {}
+            end)
+        end,
+        function(reason)
+            assert(false, "Failed to load pastebin soundlist. Reason: " .. reason)
+        end,
+        {}
+    )
+end
+
+local function check_perms()
+    if not has_all_permissions() then
+        setupPermissionRequest(all_needed_perms, owner():getName() ..
+            " wants to play sounds from the internet in you game. They need these permissions to do so.",
+            true)
+        return
+    else
+        main()
+    end
+end
+check_perms()
+
+hook.add("permissionrequest", "mac_permissions", check_perms)

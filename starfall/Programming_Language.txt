@@ -1,0 +1,242 @@
+--@name Programming Language
+--@include q
+--@server
+
+--[[------------------------------------------------
+
+    String Functions   
+    
+------------------------------------------------]]--
+
+function explodeString (str, pattern)
+    
+    -- Default to splitting by whitespaceq
+    pattern = pattern or "%s"
+
+    local tbl = {}
+    
+    for substr in string.gmatch (str, "([^"..pattern.."]+)") do
+        table.insert (tbl, substr)
+    end
+    
+    return tbl
+    
+end
+
+-- Removes trailing and tailing whitespace
+-- Also compresses all strings of whitespace to be a single space
+function trimString (str)
+
+    assert (type (str) == "string")
+    
+    -- Delete all whitespace at beginning and end of string
+    local frontstripped = string.gsub (str, "^%s+", "")
+    local endstripped = string.gsub (frontstripped, "%s+$", "")
+    -- Make sure all whitespace is at most one character
+    local whitespacenormalized = string.gsub (endstripped, "%s%s+", " ")
+    
+    return whitespacenormalized
+
+end
+
+--[[------------------------------------------------
+
+    Functional Programming Functions
+
+------------------------------------------------]]--
+
+function forEach (tbl, callback)
+    
+    for k, v in pairs (tbl) do
+        callback (k, v)
+    end
+    
+end
+
+function map (tbl, lambda)
+    
+    local new = {}
+    
+    forEach (tbl, function (k, v)
+        new[k] = lambda (v)
+    end)
+    
+    return new
+    
+end
+
+function reduce (tbl, lambda)
+    
+    if #tbl <= 1 then
+        return unpack (tbl)
+    else
+        local current = table.remove (tbl, 1)
+        return lambda (current, reduce (tbl, lambda))
+    end
+    
+end
+
+-- Like python's range, but starts at 1 for lua
+-- One argument specifies a maximum, with a default minimum of 1
+-- Two arguments specifies a minimum, then a maximum
+-- This range is inclusive to both arguments
+--    Ex. range (5)     =>  {1, 2, 3, 4, 5}
+--    Ex. range (5, 10) =>  {5, 6, 7, 8, 9, 10}
+function range (...)
+    
+    local ins = {...}
+    
+    assert( #ins > 0 and #ins <= 2 )
+    
+    local list = {}
+    
+    if #ins == 1 then
+        for i = 1, ins[1] do
+            list[i] = i
+        end
+    elseif #ins == 2 then
+        for i = ins[1], ins[2] do
+            list[i] = i
+        end
+    end
+    
+    return list
+    
+end
+
+--local mylist = {}
+--forEach (range (10), function(k, v) mylist[k] = v-1 end)
+--printTable (mylist)
+
+--print (reduce (range (10), function (a,b) return a+b end))
+--printTable (map (range (10), function (a)  return a^2 end))
+
+--[[------------------------------------------------
+
+    Language Functions      
+    
+------------------------------------------------]]--
+
+language = {}
+-- language.func will store functions
+language.func = {}
+-- language.ans will be used to store the output of the last function
+language.ans = ""
+-- language.buffers will store variables
+language.buffers = {}
+
+language.func["echo"] = function (...)
+    
+    local ins = {...}
+    
+    local str = table.concat (ins, " ")
+    print (str)
+    
+    return str
+    
+end
+
+language.func["plus"] = function (...)
+    
+    local ins = {...}
+    
+    return reduce (ins, function (a,b) return a+b end)
+    
+end
+
+language.func["mult"] = function (...)
+    
+    local ins = {...}
+    
+    return reduce (ins, function (a,b) return a*b end)
+    
+end
+
+language.func["set"] = function (...)
+    
+    local ins = {...}
+    
+    local varname = table.remove (ins, 1)
+    
+    language.buffers[varname] = table.concat (ins, " ")
+    
+end
+
+function runLangFunc (...)
+    local ins = {...}
+    local com = table.remove (ins, 1)
+    
+    assert( language.func[com], "Attempted to call non-existant function!" )
+    
+    local out = language.func[com] (unpack (ins))
+    language.ans = out
+    return out
+end
+
+function parseProgram (progn)
+    
+    assert (type (progn) == "string")
+    
+    -- Run on a line-by-line basis
+    -- Delimit lines by newline and semicolon
+    local lineStrings = explodeString (progn, "\n;")
+    
+    -- Get rid of trailing and leading whitespace
+    for k, v in pairs (lineStrings) do
+        lineStrings[k] = trimString (v)
+    end
+    
+    --print ("lines:")
+    -- printTable (lineStrings)
+    
+    local lines = {}
+    -- Split lines into lists of tokens
+    for k, v in pairs (lineStrings) do
+        lines[k] = explodeString (v, " ")
+    end
+    
+    -- Preprocesses and runs each line
+    for k, v in pairs (lines) do
+    
+        -- Do proprocessing
+        for i, j in pairs (v) do
+            
+            -- Find buffers
+            -- Buffers are specified by the $ prefix
+            if string.sub (j, 1, 1) == "$" then
+                local bufName = string.sub (j, 2)
+                -- Substitute ans
+                if bufName == "ans" then
+                    v[i] = language.ans
+                else
+                    v[i] = language.buffers[bufName] or "0"
+                end
+                
+            end
+            
+        end
+        
+        -- Pass the processed line
+        runLangFunc (unpack (lines[k]))
+        
+    end
+    
+end
+
+-- Define the program to be run
+mathVarTest =
+[[
+set myVar 69
+echo myVar set to: $myVar
+mult $myVar 2
+echo myVar*2: $ans
+]]
+
+funcNameTest =
+[[
+set myFunc echo
+$myFunc hello world
+]]
+
+parseProgram (funcNameTest)
+--print( string.find( program, '\n' ) )

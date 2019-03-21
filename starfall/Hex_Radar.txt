@@ -1,0 +1,120 @@
+--@name
+--@author
+--@shared
+
+if SERVER then
+    chip():isWeldedTo():linkComponent(chip())
+    
+else
+    
+    --Placeholder/not used
+    local triangle = {
+        { x = 100, y = 200 },
+        { x = 150, y = 100 },
+        { x = 200, y = 200 }
+
+    }
+    
+    
+    
+    local First = true
+    
+    /*Function to easily create points around a circle with the desired number of steps between each point,
+      In this case, we're using it to make hexagons, but it can be used to make any regular n-sided polygon.*/
+    
+    function Circle(X,Y,Rad,Count,Rot)
+        local HexTable = {}
+        local Rot = Rot or 0
+        
+        for I = 1,Count do
+            local X = X+math.cos(math.rad(Rot)+2*math.pi/Count*I)*Rad
+            local Y = Y+math.sin(math.rad(Rot)+2*math.pi/Count*I)*Rad
+            
+            local Vec = Vector(X,Y,0)
+            
+            
+            
+            HexTable[I] = {x = Vec.x, y = Vec.y}
+        end
+        return HexTable
+    end
+    
+    --Init values
+    Hexes = {}
+    PlyHex = {}
+    RX,RY = 0,0
+    Inc = 0
+    PX,PY = 0,0
+    FindRadius = 4000
+    Rad = 0
+    
+    hook.add("drawhud","polytest",function()
+
+        --Only need to run this once
+        if First then
+            First = false
+            Rad = 4*35
+            RX,RY = render.getResolution()
+            PX,PY = RX-220,RY-280
+            
+            --Define the shape in the center that marks the player.
+            PlyHex = Circle(PX,PY,8,3,-90)
+            
+            --Create the concentric hexagons used for the radar background, only need to define verices once.
+            for I = 1,4 do
+                Hexes[I] = Circle(PX,PY,I*35,6,90)
+            end
+
+        end
+        
+        --Draw the concentric hexagons with a set color.
+        render.setColor(Color(0,161,255,60))
+        for I = 1,4 do
+            render.drawPoly(Hexes[I])
+        end
+        
+        --Define the hexagon that continuously pulses outward's vertices.
+        MovingHex = Circle(RX-220,RY-280,Inc,6,90)
+        
+        --Draw the moving hexagon and set the color in such a way that the alpha decreases as it expands, giving it the radar effect.
+        render.setColor(Color(77,255,255,150 - (Inc*150/Rad)))
+        render.drawPoly(MovingHex)
+        
+        --Draw the shape in the middle that defines the player.
+        render.setColor(Color(255,255,0,255))
+        render.drawPoly(PlyHex)
+        
+        --Find the desired entities around the player and display them on the radar.
+        for k,v in pairs(find.allPlayers(function(e) return e:isPlayer() and e:getPos():getDistance(player():getPos()) < FindRadius-Rad*3 and e ~= player() end)) do
+            
+            --Define the entity position and get the relative position to the player.
+            local EntPos = v:getPos()
+            local RelativePos = player():getPos() - EntPos
+            
+            local RelativeAngles = player():worldToLocalAngles(v:getEyeAngles())
+            
+            /*Rotate the vector by our eye angles' yaw so they rotate around the radar.
+              I just fiddled with the values until they worked, don't ask why I did it this way, I'm just lazy.
+            */
+            RelativePos:rotate(Angle(0,-90-player():getEyeAngles().y,0))
+            
+            --Add the relative positions to the position of the center of the radar, except Y because of said fiddling above.
+            local PosX,PosY = PX + RelativePos.x/FindRadius*Rad, PY - RelativePos.y/FindRadius*Rad
+            
+            --Define the shape of the targets.
+            local EntShape = Circle(PosX,PosY,4,3,-RelativeAngles.y-90)
+            local DirTri = Circle(EntShape[3].x,EntShape[3].y,6,3,-RelativeAngles.y-90)
+            
+            --Set the color to red and draw the polygon.
+            render.setColor(Color(255,0,0,255))
+            render.drawPoly(EntShape)
+            render.setColor(Color(255,100,0,255))
+            render.drawPoly(DirTri)
+            
+        end
+        
+        --Increase the value required for the pulsing hexagon to fade.
+        Inc = Inc%Rad + timer.frametime()*60
+    end)
+    
+end

@@ -1,0 +1,85 @@
+--@name Mesh
+--@author
+--@shared
+
+if SERVER then
+    local ent = entity(2316)
+    local phys = ent:getPhysicsObject()
+    local Mesh = phys:getMesh()
+    
+    chip():isWeldedTo():linkComponent(chip())
+    
+    hook.add("net","getClients",function(name,len,ply)
+        if name == "client" then
+
+            net.start("sendmesh")
+                net.writeVector(phys:getPos())
+                net.writeAngle(phys:getAngles())
+                net.writeUInt(#Mesh,32)
+                for k, v in pairs(Mesh) do
+                    local pos = v.pos
+                    net.writeVector(pos)
+                end
+            net.send(ply)
+        end
+    end)
+    
+    
+end
+
+if CLIENT then
+    
+    local ent = nil
+    local Mesh = {}
+    local meshObj = nil
+    
+    net.start("client")
+    net.send()
+    
+    hook.add("net","getMesh",function(name,len)
+        if name == "sendmesh" then
+            
+            local objpos = net.readVector()
+            local objangs = net.readAngle()
+            local count = net.readUInt(32)
+            for i = 1, count, 1 do
+                local pos = net.readVector()
+                pos:rotate(objangs)
+                
+                --https://wiki.garrysmod.com/page/Structures/MeshVertex
+                local data  = {
+                    ["pos"]     =   pos + objpos, --+ Vector(0,0,50),
+                    ["color"]   =   Color( (i/count)*360, 1, 1):hsvToRGB()
+                }
+                
+                table.insert(Mesh,data)
+               
+            end
+            
+            
+        end
+        
+    end)
+    
+    local first = true
+    hook.add("postdrawopaquerenderables","test",function()
+        render.enableDepth(true)
+        if first then
+            if #Mesh > 0 then
+                
+                meshObj = mesh.createFromTable(Mesh)
+                
+                first = false
+            end
+        end
+        
+        if #Mesh > 0 then
+            meshObj:draw()
+        end
+        
+        
+    end)
+    
+    
+    
+end

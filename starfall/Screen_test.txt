@@ -1,0 +1,41 @@
+--@name Screen test
+--@author aboyd52501@gmail.com
+--@shared
+
+if SERVER then
+    
+    for k,v in pairs(find.byClass('starfall_screen')) do
+        if v:getOwner() == owner() then
+            v:linkComponent(chip())
+        end
+    
+    end
+
+    return
+
+end
+
+iterations = 6
+
+hook.add('Render','renderstuff', function()
+    
+    local w,h = render.getResolution()
+    
+    local sx, sy = w/iterations, h/iterations
+    
+    local total = iterations^2
+    
+    for i=1,total do
+        local x = i % iterations
+        local y = math.floor((i-1)/iterations)
+        
+        x = x * sx
+        y = y * sy
+        
+        render.setColor( Color((i/total * 360 + timer.curtime()*120)%360,1,1):hsvToRGB() )
+        
+        render.drawRect(x,y,sx,sy)
+        
+    end
+    
+end )

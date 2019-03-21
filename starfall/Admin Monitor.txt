@@ -1,0 +1,35 @@
+--@name Monitor
+--@author MacDeth
+--@shared
+
+if SERVER then
+    hook.add("PlayerNoClip", "am_nocliplog", function(user, state)
+        if state then
+            print(user:getName(), "is using noclip.")
+        else
+            print(user:getName(), "is no longer using noclip.")
+        end
+    end)
+    
+    hook.add("PlayerHurt", "am_playerhurtlog", function(ply, attacker, newHealth, damageTaken)
+        print(attacker, "inflicted", ply, "with", damageTaken, " damage.")
+    end)
+    
+    hook.add("PlayerDeath", "am_playerdeathlog", function(ply, inflictor, attacker)
+        print(attacker:getName(), "killed", ply:getName(), "with", inflictor)
+    end)
+    
+    hook.add("PlayerDisconnected", "am_playerleavelog", function(ply)
+        print(ply:getName(), "left the game.")
+    end)
+    
+    hook.add("PlayerInitialSpawn", "am_playerjoinlog", function(ply)
+        print(ply:getName(), "joined the game.")
+    end)
+    
+    hook.add("PhysgunPickup", "am_physgunlog", function(ply, ent)
+        if ent:getOwner() ~= owner() and ent:getOwner():isPlayer() then
+            print(ply:getName() .. " picked up " .. ent:getOwner():getName() .. "'s prop with a physgun.")
+        end
+    end)
+end

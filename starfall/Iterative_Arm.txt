@@ -1,0 +1,110 @@
+--@name Iterative Arm
+--@author doomtaters
+--@server
+
+
+tmdl = "models/hunter/blocks/cube025x025x025.mdl"
+target = prop.create( chip():getPos()+Vector(500,0,0), Angle(), tmdl, false )
+target:setColor(Color(255,255,255,128))
+
+sphere = "models/holograms/hq_sphere.mdl"
+
+links = {}
+
+linkCount = 5
+
+linkLength = 50
+
+local initPos = {}
+
+for i = 1, linkCount do
+    
+    local hPos = chip():getPos() + Vector(0,0,linkLength)*(i-1)
+    initPos[i] = hPos
+    
+    links[i] = {
+        pos = hPos,
+        color = Color( (i-1)/linkCount * 360, 2/3, 1 ):hsvToRGB(),
+        length = linkLength
+    }
+    
+    local h = holograms.create( links[i].pos, Angle(), sphere, Vector(1,1,1) )
+    h:suppressEngineLighting( true )
+    h:setColor( links[i].color )
+    links[i].holo = h
+    
+end
+
+threshold = 8
+thresHolo = holograms.create( target:getPos(), Angle(), sphere, Vector(1/12,1/12,1/12)*threshold )
+
+local maxIters = 15
+
+--timer.simple( 1, function()
+hook.add( "Think", "updateArm", function()
+
+    local rootPos = chip():getPos()
+    local targetPos = target:getPos()
+    thresHolo:setPos(targetPos)
+    
+    local inThresh = links[linkCount].pos:getDistance( targetPos ) < threshold
+    
+    --local force = Vector(5*math.sin(timer.curtime()*50*math.pi/180),5*math.sin(timer.curtime()*28.34*math.pi/180),5)
+    
+    for k, v in pairs( initPos ) do
+        links[k].pos = v
+    end
+    
+    local iter = 0
+    
+    while not inThesh and iter < maxIters do
+        
+        iter = iter + 1
+        
+        for i = linkCount, 1, -1 do
+            
+            local l = links[i]
+            
+            if i == linkCount then
+                l.pos = targetPos
+            else
+                local nextPos = links[i+1].pos
+                l.pos = nextPos + (l.pos-nextPos):getNormalized()*l.length
+            end
+            
+        end
+        
+        
+        for i = 1, linkCount do
+            
+            local l = links[i]
+            
+            local diff
+            
+            if i == 1 then
+                diff = rootPos - l.pos
+                l.pos = l.pos + diff
+            else
+                local lastPos = links[i-1].pos
+                diff = lastPos + (l.pos-lastPos):getNormalized()*l.length - l.pos
+                l.pos = l.pos + diff
+            end
+            
+            if false then--i < linkCount then
+                for ii = i, linkCount do
+                    links[ii].pos = links[ii].pos + diff
+                end
+            end
+            
+        end
+        
+        for i = 1, linkCount do
+            local l = links[i]
+            l.holo:setPos( l.pos )
+        end
+    end
+    
+end )
+--end )
+
+--hook.add( "Think", "

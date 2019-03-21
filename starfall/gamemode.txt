@@ -1,0 +1,36 @@
+--@name
+--@author
+--@shared
+
+--[[
+Starfall Scripting Environment
+
+Github: https://github.com/thegrb93/StarfallEx
+Reference Page: http://thegrb93.github.io/Starfall/
+
+Default Keyboard shortcuts: https://github.com/ajaxorg/ace/wiki/Default-Keyboard-Shortcuts
+]]
+
+if SERVER then
+    if chip():isWeldedTo() then
+        chip():isWeldedTo():linkComponent(chip())
+    end
+    --owner():setPos(Vector(2000, 0, 11850))
+    
+    local spawn_offset = Vector(0, 0, 10)
+    hook.add("PlayerSpawn", "mac_gm_spawn", function(ply)
+        ply:setPos(chip():getPos() + spawn_offset)
+        prop.createSent(chip():getPos() + spawn_offset, Angle(), "weapon_acf_m4a1", 0)
+        prop.createSent(chip():getPos() + spawn_offset, Angle(), "weapon_acf_m4a1", 0)
+        prop.createSent(chip():getPos() + spawn_offset, Angle(), "weapon_acf_m4a1", 0)
+    end)
+    printTable(team.getAllTeams())
+    return
+end
+
+font = render.createFont("Coolvetica", 24, 400, true, false, true)
+render.setFont(font)
+
+--if player() == owner() then
+--    for k, v in pairs(find.allPlayers()) do print(v:getName() .. " " .. v:getSteamID()) end
+--end

@@ -1,0 +1,28 @@
+--@name
+--@author
+--@shared
+
+if SERVER then
+    if chip():isWeldedTo() then
+        chip():isWeldedTo():linkComponent(chip())
+    end
+    return
+end
+
+if player() == owner() then
+    hook.add("postdrawopaquerenderables", "mac_esp_box", function()
+        for k, v in pairs(find.allPlayers()) do
+            if not v == owner() then
+                render.draw3DWireframeBox(v:getPos(), Angle(), Vector(-16, -16, 0), Vector(16, 16, 72))
+            end
+        end
+    end)
+    hook.add("drawhud", "mac_esp_names", function()
+    for k, v in pairs(find.allPlayers()) do
+        if not v == owner() then
+            pos = (v:getPos() + Vector(0, 0, 72)):toScreen()
+            render.drawText(pos.x, pos.y, v:getName())
+        end
+    end
+end)
+end

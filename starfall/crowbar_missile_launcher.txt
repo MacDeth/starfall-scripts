@@ -1,0 +1,19 @@
+--@name
+--@author
+--@server
+
+
+hook.add("KeyPress","press",function(ply,key)
+    if ply == owner() and ply:getActiveWeapon():getClass() == "weapon_crowbar" and key == IN_KEY.ATTACK and prop.canSpawn() then
+        Doot = prop.createSent(owner():getEyePos() + owner():getAimVector() * 400, Angle(), "gb5_proj_tankshell_240", 0)
+        Doot:setAngles((Doot:getPos() - owner():getEyePos()):getAngle())
+        Doot:enableMotion(true)
+        Doot:setMass(50000)
+        Doot:setPhysMaterial("metalehicle")
+        Doot:setVelocity(owner():getAimVector() * 100)
+        W=wire.getWirelink(Doot)
+        W.Launch = 1
+        timer.simple(4, function() if Doot:isValid() then Doot:remove() end end)
+        --W.Launch=1
+    end
+end)

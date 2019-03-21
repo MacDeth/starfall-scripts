@@ -1,0 +1,29 @@
+--@name Auto Turret
+--@author
+--@server
+
+--[[
+printTable(find.all(function(e)
+    if e:getClass() == "npc_combine_s" then
+        return true
+    else
+        return false
+    end
+end))
+
+
+for k, v in pairs(find.inSphere(chip():getPos(), 300, function(e) return e:getClass() == "npc_combine_s" end)) do
+    v:remove()
+end
+]]--
+
+hook.add("PlayerHurt", "asdasdAsd", function(ply, attacker, new_health, damage_taken)
+    if ply:getSteamID() == "STEAM_0:1:15645964" then
+        if attacker:getClass() == "npc_combine_s" then 
+            attacker:remove()
+        end
+        if new_health <= 50 then
+            concmd("ulx hp " .. ply:getName() .. " 100")
+        end
+    end
+end)

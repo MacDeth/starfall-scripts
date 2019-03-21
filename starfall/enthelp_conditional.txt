@@ -1,0 +1,13 @@
+--@name
+--@author
+--@shared
+
+if SERVER then 
+    hook.add("KeyRelease", "enthelp", function(ply, key)
+        if ply == owner() and key == IN_KEY.JUMP then
+            for k, v in pairs(find.byClass("gb5_cp_howitzer_can")) do
+                printTable(wire.getWirelink(v))
+            end
+        end
+    end)
+end

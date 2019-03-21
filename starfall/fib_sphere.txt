@@ -1,0 +1,164 @@
+--@name
+--@author
+--@server
+
+
+function rot(v,a)
+    vec = v*1
+    
+    vec:rotate(a)
+    return vec
+end
+
+function fib_sphere(samples,random)
+    local rnd = 1
+    
+    if random then
+        rnd = random
+    end
+    
+    local points = {}
+    local offset = 2/samples
+    local increment = math.pi*(3-math.sqrt(5))
+    
+    for i=0,samples-1 do
+        local y = ((i*offset)-1)+(offset/2)
+        local r = math.sqrt(1-math.pow(y,2))
+        local phi = ((i+rnd)%samples)*increment
+        local x,z = math.cos(phi)*r,math.sin(phi)*r
+        points[#points+1] = Vector(-y,x,z)
+    end
+    return points
+end
+
+
+function randomize( t )
+    local out = { }
+    
+    while #t > 0 do
+        table.insert( out, table.remove( t, math.random(#t) ) )
+    end
+    
+    return out
+end
+
+
+function Filter(e)
+    return e:getOwner() == owner()
+end
+
+
+
+HoloScale = Vector(1,1,1)
+
+Model = "models/sprops/geometry/fhex_144.mdl"
+
+Material = "engine/preloadtexture"
+
+color = Color(0,0,0,50)
+
+
+
+
+
+Holo = {}
+
+Radius = 300
+
+
+pos = owner():getPos()
+
+function CreateSphere()
+    
+    I = 1
+    
+    Found = find.byModel(Model,Filter)
+
+    Sphere = fib_sphere(#Found,1)
+    
+    NewSphere = {}
+    
+    for I = 1,#Sphere do
+        NewSphere[I] = Sphere[I]
+    end
+    
+    --Sphere = randomize(NewSphere)
+    
+    EyeAngles = owner():getEyeAngles()
+    
+    while I < #Sphere + 1 do
+    
+        --Holo[I] = holograms.create(chip():localToWorld(Sphere[I] * Vector(Radius,Radius,Radius)),Angle(),Model,HoloScale)
+        
+        Holo[I] = Found[I]
+        if not Holo[I]:isValid() then return end
+        
+        vec = Sphere[I] * Radius
+        
+        vec:rotate(EyeAngles)
+        
+        Holo[I]:setPos(pos + vec)
+        
+        
+        
+        --Holo[I]:setParent(chip())
+        Holo[I]:enableMotion(false)
+        Holo[I]:setAngles((pos - Holo[I]:getPos()):getAngle() + Angle(90,0,0))
+        Holo[I]:setMaterial(Material)
+        Holo[I]:setColor(Color((I*240/#Sphere)%360,1,1):hsvToRGB():setA(150))
+        
+        --Holo[I]:remove()
+        
+        I = I + 1
+        if quotaUsed() > 0.001 then
+            coroutine.yield()
+        end
+    end
+end
+
+Count = -1
+
+timer.create("check",1,0,function()
+    local MCount = #find.byModel(Model,Filter)
+    
+    
+    if Count ~= MCount then
+        co = coroutine.create(CreateSphere)
+        Count = MCount
+    end
+end)
+
+hook.add("PlayerSay","soos",function(ply,txt)
+    local args = string.explode(" ",txt)
+    if args[1] == "-repos" then
+    
+        pos = owner():getPos()
+        co = coroutine.create(CreateSphere)
+        return ""
+        
+    elseif args[1] == "-remove" then
+    
+        chip():remove()
+        return ""
+    
+    elseif args[1] == "-size" then
+    
+        Radius = tonumber(args[2]) or 400
+        
+        co = coroutine.create(CreateSphere)
+        
+        return ""
+    elseif args[1] == "-rebase" then
+        co = coroutine.create(CreateSphere)
+    end
+end)
+
+
+hook.add("think","",function()
+
+    --chip():setAngles(Angle(math.sin(timer.systime()*1.5)*180,math.cos(timer.systime())*180,0))
+    if co and coroutine.status(co) ~= "dead" then
+        coroutine.resume(co)
+    end
+    
+end)

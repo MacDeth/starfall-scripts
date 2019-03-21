@@ -1,0 +1,29 @@
+--@name
+--@author
+--@shared
+--@include libs/convenient.txt
+
+require("libs/convenient.txt")
+if SERVER then link_welded_component() return end
+
+local time = {hour = 0, minute = 0, zone = 4, str = ""}
+local res_x, res_y = render.getGameResolution()
+local rtc_x, rtc_y = math.floor(7 * res_x / 8), math.floor(res_y / 8)
+
+function update_time()
+    time.hour = math.floor(os.time() / 60 / 60 % 24 - time.zone)
+    time.minute = math.floor(os.time() / 60 % 60)
+    time.str = (time.hour < 13 and tostring(time.hour) or tostring(time.hour - 12)) ..
+        ":" .. string.format("%02d", time.minute) ..
+        (time.hour < 13 and " AM" or " PM")
+end
+
+update_time()
+
+timer.create("updatetime", 15, 0, function()
+    update_time()
+end)
+
+hook.add("drawhud", "rtc_draw", function()
+    render.drawText(rtc_x, rtc_y, time.str, 2)
+end)

@@ -1,0 +1,151 @@
+--@name convenient
+--@author MacDeth
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+
+-- ABCDEFGHIJKLMNOPQRSTUVWXYZ
+-- abcdefghijklmnopqrstuvwxyz
+-- 0123456789
+-- !@#$%^&*()_+-=[]{}\|/?,.<>
+
+--[[
+    Functional-style map. Run the function f on every element of the table tbl.
+    Returns a new table with the results of function f.
+]]--
+function map(tbl, f)
+    local new = {}
+    
+    for k, v in pairs(tbl) do
+        new[k] = f(v)
+    end
+    
+    return new
+end
+
+--[[
+    Functional-style reduce. For every element in table tbl, run function f on
+    the elements. Note, function f must have two operands and should be
+    associative and commutative.
+    Returns the final value calculated via function f.
+]]--
+function reduce(tbl, f)
+    if #tbl <= 1 then
+        return unpack(tbl)
+    else
+        local current = table.remove(tbl, 1)
+        return f(current, reduce(tbl, f))
+    end
+end
+
+--[[
+    Links the first component that is welded to the chip.
+]]--
+function link_welded_component()
+    if SERVER then
+        if chip():isWeldedTo() then
+            chip():isWeldedTo():linkComponent(chip())
+        end
+    end
+end
+
+--[[
+    Finds the first player with the substring str in their name.
+    Returns the found player, nil otherwise.
+]]--
+function find_player(str)
+    for k, v in pairs(find.allPlayers()) do
+        if string.find(string.lower(v:getName()), string.lower(str)) ~= nil then
+            return v
+        end
+    end
+end
+
+function find_str_in_table(tbl, str)
+    for k, v in pairs(tbl) do
+        if string.find(string.lower(v), string.lower(str)) ~= nil then
+            return v
+        end
+    end
+    return nil
+end
+
+--[[
+
+--@client
+
+------------------------------------------------
+
+--    Functional Programming Functions
+
+------------------------------------------------
+
+function forEach (tbl, callback)
+    
+    for k, v in pairs (tbl) do
+        callback (k, v)
+    end
+    
+end
+
+function map (tbl, lambda)
+    
+    local new = {}
+    
+    forEach (tbl, function (k, v)
+        new[k] = lambda (v)
+    end)
+    
+    return new
+    
+end
+
+function reduce (tbl, lambda)
+    
+    if #tbl <= 1 then
+        return unpack (tbl)
+    else
+        local current = table.remove (tbl, 1)
+        return lambda (current, reduce (tbl, lambda))
+    end
+    
+end
+
+-- Like python's range, but starts at 1 for lua
+-- One argument specifies a maximum, with a default minimum of 1
+-- Two arguments specifies a minimum, then a maximum
+-- This range is inclusive to both arguments
+--    Ex. range (5)     =>  {1, 2, 3, 4, 5}
+--    Ex. range (5, 10) =>  {5, 6, 7, 8, 9, 10}
+function range (...)
+    
+    local ins = {...}
+    
+    assert( #ins > 0 and #ins <= 2 )
+    
+    local list = {}
+    
+    if #ins == 1 then
+        for i = 1, ins[1] do
+            list[i] = i
+        end
+    elseif #ins == 2 then
+        for i = ins[1], ins[2] do
+            list[i] = i
+        end
+    end
+    
+    return list
+    
+end
+
+--local mylist = {}
+--forEach (range (10), function(k, v) mylist[k] = v-1 end)
+--printTable (mylist)
+
+print (reduce (range (10), function (a,b) return a+b end))
+printTable (map (range (10), function (a)  return a^2 end))
+
+
+]]

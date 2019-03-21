@@ -1,0 +1,17 @@
+--@name Strobe
+--@author MacDeth
+--@server
+
+
+local flag = false
+wire.adjustOutputs({"Out"}, {"number"})
+
+hook.add("tick", "", function()
+    if flag then
+        wire.ports["Out"] = 100
+        flag = not flag
+    else
+        wire.ports["Out"] = 0
+        flag = not flag
+    end
+end)

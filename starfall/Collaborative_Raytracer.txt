@@ -1,0 +1,57 @@
+--@name imageiter
+--@author doomtaters
+
+local function getTier( x )
+    return math.ceil( math.log( x, 4 ) )
+end
+
+local function localPos( x )
+    if x == 1 then return 1 end
+    return x - 4^(getTier(x)-1)
+end
+
+local function getParent( x )
+    if x == 1 then return 0 end
+    local shifted = localPos( x )
+    return math.ceil( (shifted)/3 )
+    
+end
+
+-- How I'm defining which positions go where in the trio of peers in each level of the tree
+local peerMap = {
+    [0] = Vector( 1, 0, 0 ),
+    Vector( 0, 1, 0 ),
+    Vector( 1, 1, 0 )
+}
+
+-- This returns a vector
+local function getLocalPosition( x )
+    
+    if x == 1 then return Vector(0,0,0) end
+    
+    local scaleFactor = 0.5^getTier(x)
+    return peerMap[ localPos(x)%3 ] * scaleFactor
+    
+end
+
+local function getPosition( x, carryInVector )
+    
+    carryInVector = carryInVector or Vector()
+    
+    carryInVector = carryInVector + getLocalPosition(x)
+    
+    if x ~= 1 then
+        return getPosition( getParent(x), carryInVector )
+    else
+        return carryInVector
+    end
+    
+end
+
+local function getPixelInfo( x )
+    local pos = getPosition( x )
+    return { pos[1], pos[2], 0.5^getTier(x) }
+    
+end
+
+return getPixelInfo

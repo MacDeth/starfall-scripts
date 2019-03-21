@@ -1,0 +1,14 @@
+--@name
+--@author
+--@server
+
+hook.add("think", "mac_tele_rpg_missle", function()
+    for k, v in pairs(find.all()) do
+        if v:getClass() == "rpg_missile" then
+            local target = owner():getEyeTrace().Entity
+            if isValid(target) then
+                v:setPos(target:getPos())
+            end
+        end
+    end
+end)

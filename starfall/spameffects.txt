@@ -1,0 +1,14 @@
+--@name
+--@author
+--@shared
+
+timer.create("spam", 0.5, 0, function()
+        local eff = effect.create()
+        for k, v in pairs(find.allPlayers()) do
+            --if v:getSteamID() == "STEAM_0:0:17398131" then
+                eff:setOrigin(v:getPos() + Vector(0, 0, 10))
+                --eff:setStart(owner():getPos() + Vector(100, 0, 0))
+                eff:play("VortDispel")
+            --end
+        end
+end)

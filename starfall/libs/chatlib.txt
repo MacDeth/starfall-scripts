@@ -1,0 +1,34 @@
+--@name ChatLib
+--@author MacDeth
+--@server
+--local convenient = require("libs/convenient.txt")
+
+local commands = {}
+
+local lib = {
+    raw = "", -- raw string of the last said message
+    cmds = {}, -- exploded string of the last said message
+    ply = nil, -- the player who last said a message
+    new = false, -- flag showing newness of message, should be manually set false
+    add_command = function(cmd_name, callback) -- command handler
+        commands[cmd_name] = callback
+    end
+}
+
+hook.add("PlayerSay", "mac_lastsaid", function(ply, text, team)
+    lib.raw = text
+    lib.cmds = string.explode(" ", text)
+    lib.ply = ply
+    lib.new = true
+    
+--[[
+    printTable(lib) -- debug
+]]
+    
+    -- command handling
+    if commands[lib.cmds[1]] then
+        commands[lib.cmds[1]](unpack(lib.cmds, 2))
+    end
+end)
+
+return lib

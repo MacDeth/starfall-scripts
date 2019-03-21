@@ -1,0 +1,38 @@
+--@name Hologram Test
+--@author MacDeth
+--@shared
+
+if SERVER then 
+    if holograms.canSpawn() then
+        print(holograms.hologramsLeft(), " holograms left.")
+        local temp = holograms.create(chip():getPos(), Angle(0, 0, 0), "models/props_combine/breenglobe.mdl", Vector(1, 1, 1))
+        temp:setParent(chip())
+        
+        
+        --while true do
+            --temp:setPos(temp:getPos())
+        --end
+    else
+        print("Cannot spawn holograms.")
+    end
+end
+
+if CLIENT then
+    local RT = rendertarget.create(render.getIsHighRes())
+    
+    local function DrawingFunction()
+        render.clear( 0, 0, 0, 255 )
+        render.setColor( 255, 255, 255 )
+        render.drawRect( 0, 0, 512, 256 )
+    end
+
+    hook( "render", "UpdateRT", function()
+        RT:DrawToTexture( DrawingFunction )
+        hook( "render", "UpdateRT" )
+    end)
+    
+    hook( "render", "DrawRT", function()
+        RT:Draw( 0, 0, 512, 512 )
+    end)
+end
+

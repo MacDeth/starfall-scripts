@@ -1,0 +1,19 @@
+--@name Tracer
+--@author
+--@shared
+
+if SERVER then
+    if chip():isWeldedTo() then
+        chip():isWeldedTo():linkComponent(chip())
+    end
+    return
+end
+
+hook.add("drawhud", "mac_tracer", function()
+    for k, v in pairs(find.all()) do
+        local pos = v:getPos():toScreen()
+        if pos then
+            render.drawText(pos.x, pos.y, v:getClass())
+        end
+    end
+end)

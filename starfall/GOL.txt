@@ -1,0 +1,189 @@
+--@name GOL
+--@author
+--@shared
+
+if SERVER then
+    for k,v in pairs(find.byClass("starfall_screen")) do
+        if v:getOwner() == owner() then
+            v:linkComponent(chip())
+        end
+    end
+    return
+else
+
+CMatrix = {}
+
+function checkCell(x,y,tab)
+    --print(CMatrix[X][Y])
+    if not tab[x] then return 0 end
+    local CellVal = tab[x][y]
+    return CellVal ~=nil and CellVal or 0
+end
+
+function checkAdjCellCount(x,y,tab)
+    local x = x or 0
+    local y = y or 0
+    local J = 0
+    
+    for k,v in pairs(Adjacent) do
+        --print(checkCell(X + v[1],X + v[2]))
+        local num = tonumber(checkCell(x + v[1],y + v[2],tab)) and 1 or 0
+        
+        J = J + num
+        
+    end
+
+    return J
+
+end
+
+function setTCMatrix(x,y,flag,matrix)
+    
+    local matrix = matrix and matrix or CMatrix
+    
+    if matrix[x] == nil then
+        matrix[x] = {}
+        matrix[x][y] = flag
+    else
+        matrix[x][y] = flag
+    end
+    
+    if table.count(matrix[x]) == 0 then
+        matrix[x] = nil
+    end
+
+end
+
+function borderLiveCells()
+    local tab = {}
+
+    for x,v in pairs(CMatrix) do
+    --print(x)
+        for y,j in pairs(v) do
+
+            for dx = -1,1 do
+                for dy = -1,1 do
+                    if dx == 0 and dy == 0 then continue end
+                                
+                    local nx,ny = x + dx,y + dy
+                    
+                    tab[nx] = tab[nx] or {}
+                    
+                    tab[nx][ny]=(tab[nx][ny] or 0)+1
+                    
+                end
+            end
+
+            
+        end
+    end
+
+    return tab
+end
+
+
+function GOLSimulate()
+    local CellsToChange = borderLiveCells()
+    local ChangedCells = {}
+    for k,v in pairs(CellsToChange) do
+        for i,j in pairs(v) do
+            
+            local c = checkCell(k,i,CMatrix)
+            
+            if c == 1 then
+                setTCMatrix(k,i,1,ChangedCells)
+                
+                if j < 2 or j > 3 then
+                    --print(k,i)
+                    setTCMatrix(k,i,nil,ChangedCells)
+                end
+                
+            elseif j == 3 then
+
+                setTCMatrix(k,i,1,ChangedCells)
+                
+            end
+            
+            
+        end
+    end
+    
+    --printTable(CellsToChange)
+    CMatrix = ChangedCells
+    
+end
+
+--[[
+setTCMatrix(12,12,1,CMatrix)
+setTCMatrix(12,13,1,CMatrix)
+setTCMatrix(12,14,1,CMatrix)
+setTCMatrix(13,13,1,CMatrix)
+setTCMatrix(11,12,1,CMatrix)
+
+
+
+
+setTCMatrix(1,1,1,CMatrix)
+
+setTCMatrix(1,2,1,CMatrix)
+
+setTCMatrix(1,3,1,CMatrix)
+
+setTCMatrix(2,2,1,CMatrix)
+
+setTCMatrix(0,1,1,CMatrix)
+]]
+
+for idx = 0, 750 do
+    setTCMatrix(math.random(-50, 50), math.random(-50, 50), 1, CMatrix)
+end
+
+--[[setTCMatrix(2,1,1,CMatrix)
+setTCMatrix(2,2,1,CMatrix)]]
+
+--GOLSimulate()
+
+timer.create("resume",0.015151515,0,function()
+    
+    --printTable(CMatrix)
+    
+    for I = 1,1 do
+        GOLSimulate()
+    end
+
+end)
+
+--CMatrix = borderLiveCells()
+
+--BMatrix = borderLiveCells()
+
+local render = render
+
+local mat = Matrix()
+local Vec = Vector(1,1,1)
+
+hook.add("render","test",function()
+    local X,Y = render.getResolution()
+    local X,Y = X/2,Y/2
+    
+    mat:setScale(Vec)
+    --mat:setTranslation(chip():getPos())
+    
+        render.pushMatrix(mat)  
+        for k,v in pairs(CMatrix) do
+            for i,j in pairs(v) do
+                --render.setColor(Color(40,0,0))
+                
+                render.drawRect(X+k,Y+i,1,1)
+                
+                --[[render.pushMatrix(mat)
+                render.setFont("Default")
+                render.drawText(X+k*16,Y+i*16,tostring(j),1)
+                render.popMatrix()]]
+            end
+        end
+        render.popMatrix()
+    
+end)
+     
+end

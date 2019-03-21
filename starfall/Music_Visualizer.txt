@@ -1,0 +1,265 @@
+--@name Music Visualizer
+--@author doomtaters
+--@shared
+if SERVER then
+    
+    if chip():isWeldedTo() then chip():isWeldedTo():linkComponent(chip()) end
+    --setSoftQuota(0.50)
+    
+    return
+end
+
+-- some urls
+alex = "http://stream-mp3.infowars.com:80/;"
+cyberia = "https://lainon.life/radio/cyberia.ogg"
+
+-- what you want to play
+URL = "http://doom.epic.click/music/tycho/Dive/Hours.mp3"
+
+-- secret mode
+infowars = false
+
+if infowars then
+    infowarsLogo = render.getTextureID("http://doom.epic.click/infowars.jpg")
+    URL = alex
+end
+
+--if not hasPermission("bass.play2D", url) then
+--    print( player():getName() .. " doesn't have permission" )
+--    return
+--end
+
+-- sorry for failing to document these properly, or even give them descriptive name
+local c = Matrix()
+c:setTranslation(Vector(0,256,0))
+
+local d = Matrix()
+d:setAngles(Angle(-60,0,0))
+
+local q = Matrix()
+q:setAngles(Angle(60,0,0))
+q:setTranslation(Vector(256,0,512*math.sin(math.rad(60))))
+
+local pl1 = Matrix()
+pl1:setAngles(Angle(0,0,90))
+
+local pl2 = Matrix()
+pl2:setAngles(Angle(0,0,-90))
+pl2:setTranslation(Vector(0,512,512))
+
+local alM = Matrix()
+alM:setTranslation(Vector(256,256,100))
+
+render.createRenderTarget("rain")
+render.createRenderTarget("plane")
+
+local drawPlane = true
+
+local fftSamps = 0
+
+local divs = 64
+local seg = 256*(2^(fftSamps-1))
+local mul = seg/divs
+
+local bgCol = Color(0,43,54)
+local gren = Color(133,153,0)
+local grenHSV = gren:rgbToHSV()
+local invBgCol = Color(255,255-54,255-54)
+
+local rtsq = 1024/divs
+local recWidth = 512/seg
+local barMargin = 0.1
+local prog = 0                  -- updated in the timer below    
+
+local distMax = 500
+
+local FFT
+local scroll = 0
+local fftSum = 0
+local mulD = 0
+
+local dbFloor = 60
+
+local runVisualizerAudio = function(source)
+    
+    bass.loadURL(source,"noblock",function(snd, err, errtxt)
+    --bass.loadFile( "sound/" .. "music/sp_a2_bts5_x1.wav","3d noblock",function(snd, err, errtxt)
+        
+        assert( snd, "Sound failed to load!" )
+        
+        timer.create("updatesoundandtimers",1/4,0,function()
+            local dist = (chip():getPos():getDistance(player():getPos()))
+            snd:setVolume(dist<distMax and (1-dist/distMax) or 0)
+            prog = snd:getTime() / snd:getLength()
+        end)
+        
+        hook.add("render","r",function()
+            --render.drawText( 1,1,"usage: " .. math.round(quotaAverage()*(10^6)) .. "us" )
+            
+            --q:setAngles(Angle(0,timer.curtime()*36,0))
+            
+            FFT = snd:getFFT(fftSamps)
+    
+            if #FFT < 1 then
+                return
+            end
+            
+            if drawPlane then
+                drawPlane = false
+                render.selectRenderTarget('plane')
+                render.setColor(bgCol)
+                render.drawRect(0,0,1024,1024)
+                render.setColor(gren)
+                for i = 1,64 do
+                    render.drawRect((i-1)*1024/64,0,1,1024)
+                end
+                for j = 1,64 do
+                    render.drawRect(0,(j-1)*1024/64,1024,1)
+                end
+                render.selectRenderTarget(nil)
+            end
+            
+            render.setBackgroundColor(bgCol)
+            
+            -- green plane
+            render.pushMatrix(pl1)
+            render.setRenderTargetTexture("plane")
+            render.drawTexturedRectUV(0,0,512,512,0,scroll,1/8,1/8+scroll)
+            render.popMatrix()
+            render.pushMatrix(pl2)
+            render.drawTexturedRectUV(0,0,512,512,0,-scroll,1/8,1/8-scroll)
+            render.popMatrix()  
+            
+            local lastSum = fftSum
+            fftSum = 0
+            
+            -- start drawing rects to rain
+            render.selectRenderTarget("rain")
+            render.setRenderTargetTexture("rain")
+            render.drawTexturedRect(0,rtsq/8,1024,1024)
+            for i = 1, divs do
+                
+                local j = (i-1)*mul
+                
+                local sum = 0
+                for ii = 1, mul do
+                    --assert( FFT[ii+j], "attempted to access index "..(ii+j).." FFT table length is "..#FFT )
+                    sum = sum + FFT[ii+j]
+                    fftSum = FFT[ii+j] + fftSum
+                end
+                scroll = scroll + sum/3000
+                
+                local amp = sum/mul
+                
+                local colVal = (dbFloor+math.max(20*math.log(amp,10),-dbFloor))/dbFloor
+                render.setColor(bgCol + invBgCol*colVal)
+                --render.setColor(Color(0,255*((timer.curtime()+i/seg)%1),0))
+                render.drawRect( (i-1)*rtsq, 0, rtsq, rtsq/8 )
+            end
+            scroll = scroll % 1
+    
+            render.selectRenderTarget(nil)
+                
+            -- draw the rain RT
+            render.pushMatrix(q)
+    
+            render.setRenderTargetTexture("rain")
+            render.setColor(Color(255,255,255))
+            render.drawTexturedRect(0,0,512,512)
+            --render.drawTexturedRectUV(0,0,512,512,0,1,1,0)
+            
+            render.popMatrix()
+            
+            local sumDifference = fftSum - lastSum
+            local barMul = math.atan( 500 * sumDifference/seg )/math.pi + 0.5
+            local mulD = (barMul + mulD*3)/4
+            local barMul = barMul
+            
+            -- progress bar
+            render.pushMatrix(d)
+            
+            render.setColor(bgCol*0.95+Color(0,0,0,255))
+            render.drawRect(0,0,512,512)
+            render.setColor(bgCol)
+            render.drawRect(512*barMargin,512*barMargin,512*(1-barMargin*2),512*(1-barMargin*2))
+            
+            render.setColor((Color(grenHSV[1],grenHSV[2]*barMul,grenHSV[3])):hsvToRGB())
+            render.drawRect(512*barMargin,512*barMargin,512*(1-barMargin*2),512*(1-barMargin*2)*prog)
+            
+            render.popMatrix()
+            
+            -- draw infowars
+            if infowars  then
+                
+                alM:setAngles(Angle(0,timer.curtime()*50%360,0))
+                
+                local xs = math.sin(timer.curtime()*1.8)/8
+                local ys = math.cos(timer.curtime()*1.2329)/8
+                render.pushMatrix(alM)
+                render.setColor(Color(255,255,255))
+                render.setTexture(infowarsLogo)
+                render.drawTexturedRectUV(-128,-128,256,256,-xs,-ys,xs+1/2,ys+1/2)
+                render.popMatrix()
+                
+            end
+            
+            -- draw FFT bars
+            render.pushMatrix(c)
+            
+            
+            for i = 1, divs do
+                
+                local j = (i-1) * mul
+                
+                local sum = 0
+                for ii = 1, mul do
+                    sum = sum + FFT[ii+j]
+                end  
+                
+                local amp = sum/mul
+                local frac = (i-1)/divs
+                
+                local dB = math.max(20*math.log(amp,10),-dbFloor)
+                local recHeight = (dbFloor+dB)/dbFloor
+                --local recHeight = ( amp / ( seg - i ) ) * 5000
+                
+                render.setColor( Color( frac*240, 1/3+amp/3, 1 ):hsvToRGB() )
+                render.drawRectFast( 512*frac, -recHeight*256, 512/divs, recHeight*512 )
+                
+            end
+    
+            render.popMatrix()
+            
+        end)
+        
+        
+    end)
+end
+
+runVisualizerAudio(URL)
+
+setupPermissionRequest({"bass.play2D"}, "URL sounds from external sites", true)
+
+hook.add("permissionrequest", "permission", function()
+    if not playing and URL and hasPermission("bass.play2D", URL) then
+        runVisualizerAudio(URL)
+    end
+end)
+    
+--[[
+http.get( "https://translation.googleapis.com/language/translate/v2",
+{
+    q = "hello world hello world hello world",
+    target = 'en',
+    format = 'text'
+    
+},
+function( body, length, headers, code )
+
+end, function( code )
+
+end,
+{
+    
+} )
+]]

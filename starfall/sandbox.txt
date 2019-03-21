@@ -1,0 +1,33 @@
+--@name
+--@author
+--@shared
+
+--[[
+Starfall Scripting Environment
+
+Github: https://github.com/thegrb93/StarfallEx
+Reference Page: http://thegrb93.github.io/Starfall/
+
+Default Keyboard shortcuts: https://github.com/ajaxorg/ace/wiki/Default-Keyboard-Shortcuts
+]]
+
+--@include libs/chatlib.txt
+last_said = require("libs/chatlib.txt")
+
+if SERVER then
+    if chip():isWeldedTo() then
+        chip():isWeldedTo():linkComponent(chip())
+    end
+    --owner():setPos(Vector(2000, 0, 11850))
+    hook.add("PlayerSpawn", "litetome", function(ply)
+        ply:setPos(owner():getPos())
+    end)
+    return
+end
+
+font = render.createFont("Coolvetica", 24, 400, true, false, true)
+render.setFont(font)
+
+--if player() == owner() then
+--    for k, v in pairs(find.allPlayers()) do print(v:getName() .. " " .. v:getSteamID()) end
+--end

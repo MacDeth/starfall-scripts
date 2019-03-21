@@ -1,0 +1,22 @@
+if SERVER then
+    if chip():isWeldedTo() then
+        chip():isWeldedTo():linkComponent(chip())
+    end
+    return
+end
+
+font = render.createFont("Coolvetica", 24, 400, true, false, true)
+render.setFont(font)
+
+--hook.add("predrawopaquerenderables","sf_find_hud_render", function(is_draw_skybox)
+--    for k, v in pairs(find.byClass("starfall_processor")) do
+--        render.draw3DLine(player():getPos(), v:getPos())
+--    end
+--end)
+
+hook.add("drawhud", "nameplate_hud_render", function()
+    for k, v in pairs(find.allPlayers()) do
+        pos = (v:getPos() + Vector(0, 0, 75)):toScreen()
+        render.drawText(pos.x, pos.y, v:getName())
+    end
+end)

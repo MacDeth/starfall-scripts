@@ -1,0 +1,10 @@
+--@name
+--@author
+--@shared
+
+if SERVER then return end
+
+printTable(find.inSphere(chip():getPos(), 1000))
+
+-- rpg_missile
+-- env_rockettrail

@@ -1,0 +1,146 @@
+--@name Chat Commands
+--@server
+
+local invocation = "."
+
+local commandList = {}
+
+addChatCommand = function( comString, callback )
+    
+    commandList[comString] = callback
+    
+end
+
+hook.add( "PlayerSay", "commandCheck", function( ply, txt, tm )
+    
+    local args = string.explode( " ", txt )
+    
+    if args[1] != invocation then return end
+    
+    -- remove the invocation
+    table.remove( args, 1 )
+    
+    -- args now only contains arguments to pass to the function
+    local com = table.remove( args, 1 )
+    
+    if not commandList[com] then return end
+    
+    commandList[com]( unpack(args) )
+    
+end )
+
+local say = function( str )
+    
+    timer.simple( 0.5, function()
+        concmd( "say " .. str )
+    end )
+end
+
+addChatCommand( "delete", function()
+
+    chip():remove()
+
+end )
+
+addChatCommand( "add", function(...)
+
+    nums = {...}
+    sum = 0
+    
+    for index, num in pairs(nums) do
+        sum = sum + tonumber(num)
+    end
+    
+    say( sum )
+
+end )
+
+addChatCommand( "mul", function(...)
+
+    nums = {...}
+    product = 1
+    
+    for index, num in pairs(nums) do
+        product = product * num
+    end
+    
+    say( product )
+    
+end )
+
+addChatCommand( "pow", function(...)
+
+    nums = {...}
+    base = table.remove( nums, 1 )
+    
+    for index, num in pairs(nums) do
+        base = base ^ tonumber(num)
+    end
+    
+    say( base )
+
+end )
+
+local function findPlayersByName( name )
+
+    plys = {}
+
+    for _, ply in pairs(find.allPlayers()) do
+        if string.find( string.upper(ply:getName()), string.upper(name) ) then
+            table.insert(plys, ply)
+        end
+    end
+
+    return plys
+
+end
+
+addChatCommand( "id", function(...)
+
+    names = {...}
+    
+    ids = ""
+    
+    for index, name in pairs(names) do
+        
+        NAME = string.upper( name )
+        
+        for _, ply in pairs(find.allPlayers()) do
+            if string.find( string.upper(ply:getName()), NAME ) then
+                ids = ids .. ply:getName() .. ":".. ply:getSteamID() .. " "
+            end
+        end
+        
+    end
+    
+    say( ids )
+    
+end )
+
+local function forEach( tbl, callback )
+    for i, k in pairs(tbl) do
+        callback(i,k)
+    end
+end
+
+addChatCommand( "yabba", function(...)
+
+    local names = {...}
+
+    forEach( names, function(k,v)
+        forEach( findPlayersByName(v), function(kk,vv)
+            local s = sounds.create( vv, "npc/zombie/zombie_voice_idle8.wav" )
+            s:play()
+        end )
+    end )
+
+end )
+
+addChatCommand( "lua", function(...)
+    
+    local ins = {...}
+    local scriptlet = table.concat( ins, " " )
+    
+    loadstring( scriptlet )()
+    
+end )

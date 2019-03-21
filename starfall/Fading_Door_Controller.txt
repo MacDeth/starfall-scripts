@@ -1,0 +1,95 @@
+--@name Fading Door Controller
+--@author MacDeth
+--@include libs/chatlib.txt
+--@include libs/convenient.txt
+--@server
+--[[----------------------------------------------------------------------------
+    Fading Door Controller
+    by MacDeth
+    https://steamcommunity.com/id/MacDeth/
+]]------------------------------------------------------------------------------
+
+local command_handler = require("libs/chatlib.txt")
+require("libs/convenient.txt")
+
+--[[
+    The maximum distance from an allowed player to the chip that will trigger
+    the prop to have no collisions.
+]]--
+local MAX_DISTANCE = 40
+local T_DELTA = 0.100
+local FAST_MODE = false
+local faded = false
+local allowed_players = {owner()} -- owner is allowed by default, but can be removed
+
+local function fade()
+    if not faded then
+        faded = true
+        chip():setSolid(false) -- no collisions with players
+        chip():isWeldedTo():setSolid(false)
+        
+        if not FAST_MODE then
+            chip():setMaterial("models/props_combine/com_shield001a") -- this change will be visible
+            chip():isWeldedTo():setMaterial("models/props_combine/com_shield001a")
+        end
+    end
+end
+
+local function unfade()
+    faded = false
+    chip():setSolid(true) -- collisions with players
+    chip():isWeldedTo():setSolid(true)
+    
+    if not FAST_MODE then
+        chip():setMaterial("") -- back to normal
+        chip():isWeldedTo():setMaterial("")
+    end
+end
+
+--[[
+    Adds a player to the list of allowed players.
+]]--
+local function chat_add_player(...)
+    local vargs = {...}
+    local player = find_player(table.concat(vargs, " "))
+        
+    if player and player:isPlayer() and not table.hasValue(allowed_players, player) then
+        print("Added " .. player:getName() .. " to the list of allowed players.")
+        table.insert(allowed_players, player)
+    end
+end
+command_handler.add_command("!add", chat_add_player)
+command_handler.add_command("!a", chat_add_player)
+
+--[[
+    Removes a player from the list of allowed players
+]]--
+local function chat_remove_player(...)
+    local vargs = {...}
+    local player = find_player(table.concat(vargs, " "))
+    
+    if table.removeByValue(allowed_players, player) then
+        print("Removed " .. player:getName() .. " from the list of allowed players.")
+    end
+end
+command_handler.add_command("!remove", chat_remove_player)
+command_handler.add_command("!r", chat_remove_player)
+
+
+--[[
+    100 ms seems to be the best compromise between performance and responsiveness.
+    Set the delay lower if you really need to, but it may cause issues if the
+    server has high standards for performance.
+]]--
+timer.create("mac_door_controller", T_DELTA, 0, function()
+    for k, v in pairs(allowed_players) do -- for every allowed player
+        local direction = (chip():getPos() - v:getPos()):getNormalized()
+        local next_pos = v:getPos() + (v:getVelocity() * T_DELTA)
+        if next_pos:getDistance(chip():getPos()) <= MAX_DISTANCE or v:getPos():getDistance(chip():getPos()) <= MAX_DISTANCE then -- if they're close enough
+            fade()
+            break
+        elseif faded then
+            unfade()
+        end
+    end
+end)

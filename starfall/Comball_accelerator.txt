@@ -1,0 +1,32 @@
+--@name Comball accelerator
+--@author doomtaters
+--@server
+
+balls = {}
+
+hook.add( "Think", "Find Comballs", function()
+
+    local scanBalls = find.byClass( "prop_combine_ball" )
+    
+    for index, ball in pairs(scanBalls) do
+        
+        if balls[ball:entIndex()] == nil then
+            balls[ball:entIndex()] = ball
+            ball:setMass(50000)
+            ball:setTrails(512,0,0.1,"trails/lol",Color(255,0,0), nil, true)
+        end
+        
+    end
+    
+    for index, ball in pairs(balls) do
+        
+        if not isValid(ball) or not ball then
+            balls[index] = nil
+            continue
+        end
+        
+        ball:applyForceCenter( ball:getVelocity()*ball:getMass()*4 )
+        
+    end
+    
+end )

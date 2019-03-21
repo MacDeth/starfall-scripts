@@ -1,0 +1,34 @@
+--@name
+--@author
+--@shared
+
+if SERVER then
+    local npc = prop.createSent(chip():getPos() + Vector(0, 0, 10), Angle(), "npc_manhack")
+    local waypoint = owner():getPos() + Vector(0, 0, 150)
+    local holo = holograms.create(chip():getPos(), Angle(0, 0, 90), "models/props_c17/streetsign004e.mdl", Vector(1, 1, 1))
+    local state = "idle"
+    
+    for k, v in pairs(find.allPlayers()) do
+        npc:addEntityRelationship(v, "like", 999)
+    end
+    
+    timer.create("mac_npc_follow", 0.25, 0, function()
+        local owner_waypoint = owner():getPos() + Vector(0, 0, 150)
+        if (npc:getPos() - owner_waypoint):getLength() > 500 and state == "idle" then
+            npc:goRun(owner_waypoint)
+        end
+    end)
+    
+    net.receive("mac_npc_reset_pos", function(len, ply)
+        npc:setPos(owner():getPos() + Vector(0, 0, 150))
+    end)
+else
+    hook.add("KeyPress", "mac_keypress", function(ply, key)
+        if ply == owner() and key == 32 then
+            net.start("mac_npc_reset_pos")
+            --net.writeVector(owner():getEyePos() + Vector(0, 0, 25))
+            net.send()
+        end
+    end)
+end
+
